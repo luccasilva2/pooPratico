@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "pagamentos.Main",
+            "projectName": "sistema-pagamentos-poo_1b461b52"
+        },
+        {
+            "type": "java",
+            "name": "Executar Sistema de Pagamentos",
+            "request": "launch",
+            "mainClass": "pagamentos.Main",
+            "projectName": "sistema-pagamentos-poo",
+            "console": "integratedTerminal",
+            "vmArgs": "-Dstdout.encoding=UTF-8 -Dfile.encoding=UTF-8"
+        }
+    ]
+}

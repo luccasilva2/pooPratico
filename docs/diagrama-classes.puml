@@ -1,0 +1,177 @@
+@startuml
+title Sistema de Processamento de Pagamentos - Diagrama de Classes
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "pagamentos.modelo" {
+
+  abstract class Pagamento {
+    - {static} contadorIds : int
+    - id : int
+    - cliente : Cliente
+    - valor : double
+    - dataCriacao : LocalDateTime
+    - status : StatusPagamento
+    - motivoRecusa : String
+    # Pagamento(cliente : Cliente, valor : double)
+    + {abstract} getTipo() : String
+    + {abstract} calcularTaxa() : double
+    # {abstract} validarRegrasEspecificas() : String
+    # {abstract} getDetalhesEspecificos() : String
+    + processar() : void {final}
+    # aoAprovar() : void
+    + getValorTotal() : double
+    + exibirResumo() : String
+    # marcarComoAutenticado() : void
+    # recusar(motivo : String) : void
+    # isAutenticado() : boolean
+    + getId() : int
+    + getCliente() : Cliente
+    + getValor() : double
+    + getStatus() : StatusPagamento
+    + getMotivoRecusa() : String
+  }
+
+  class CartaoCredito {
+    + {static} MAX_PARCELAS : int = 12
+    - numeroCartao : String
+    - nomeTitular : String
+    - validade : YearMonth
+    - cvv : String
+    - parcelas : int
+    - limiteDisponivel : double
+    + getTipo() : String
+    + calcularTaxa() : double
+    # validarRegrasEspecificas() : String
+    # aoAprovar() : void
+    # getDetalhesEspecificos() : String
+    + autenticar() : boolean
+    + gerarMensagemNotificacao() : String
+    + notificar() : void
+    + getValorParcela() : double
+    + getNumeroMascarado() : String
+    - numeroValidoPorLuhn() : boolean
+  }
+
+  class Pix {
+    - chave : String
+    - tipoChave : TipoChavePix
+    - horario : LocalTime
+    - codigoTransacao : String
+    + getTipo() : String
+    + calcularTaxa() : double
+    # validarRegrasEspecificas() : String
+    # aoAprovar() : void
+    # getDetalhesEspecificos() : String
+    + autenticar() : boolean
+    + gerarMensagemNotificacao() : String
+    + notificar() : void
+    - isPeriodoNoturno() : boolean
+  }
+
+  class Boleto {
+    - linhaDigitavel : String
+    - vencimento : LocalDate
+    - dataPagamento : LocalDate
+    + getTipo() : String
+    + calcularTaxa() : double
+    # validarRegrasEspecificas() : String
+    # getDetalhesEspecificos() : String
+    + gerarMensagemNotificacao() : String
+    + notificar() : void
+    + getDiasAtraso() : long
+    + isVencido() : boolean
+    - calcularEncargosAtraso() : double
+  }
+
+  class CarteiraDigital <<novo tipo>> {
+    - provedor : String
+    - identificadorConta : String
+    - saldo : double
+    - tokenDispositivo : String
+    - tokenInformado : String
+    + getTipo() : String
+    + calcularTaxa() : double
+    # validarRegrasEspecificas() : String
+    # aoAprovar() : void
+    # getDetalhesEspecificos() : String
+    + autenticar() : boolean
+  }
+
+  class Cliente {
+    - nome : String
+    - email : String
+    - telefone : String
+    + getNome() : String
+    + getEmail() : String
+    + getTelefone() : String
+  }
+
+  enum StatusPagamento {
+    PENDENTE
+    AUTENTICADO
+    APROVADO
+    RECUSADO
+  }
+
+  enum TipoChavePix {
+    CPF
+    CNPJ
+    EMAIL
+    TELEFONE
+    ALEATORIA
+    + formatoValido(chave : String) : boolean
+  }
+}
+
+package "pagamentos.interfaces" {
+  interface Autenticavel {
+    + autenticar() : boolean
+  }
+  interface Notificavel {
+    + gerarMensagemNotificacao() : String
+    + notificar() : void
+  }
+}
+
+package "pagamentos.servico" {
+  class ProcessadorPagamentos {
+    - historico : List<Pagamento>
+    + processarLote(lote : List<Pagamento>) : void
+    + exibirRelatorio() : void
+    + getHistorico() : List<Pagamento>
+  }
+}
+
+package "pagamentos" {
+  class Main {
+    + {static} main(args : String[]) : void
+  }
+}
+
+' Herança
+Pagamento <|-- CartaoCredito
+Pagamento <|-- Pix
+Pagamento <|-- Boleto
+Pagamento <|-- CarteiraDigital
+
+' Implementação de interfaces
+Autenticavel <|.. CartaoCredito
+Autenticavel <|.. Pix
+Autenticavel <|.. CarteiraDigital
+Notificavel <|.. CartaoCredito
+Notificavel <|.. Pix
+Notificavel <|.. Boleto
+
+' Associações
+Pagamento "*" --> "1" Cliente : pertence a
+Pagamento --> "1" StatusPagamento : status
+Pix --> "1" TipoChavePix : tipoChave
+ProcessadorPagamentos o--> "*" Pagamento : historico
+ProcessadorPagamentos ..> Autenticavel : usa
+ProcessadorPagamentos ..> Notificavel : usa
+Main ..> ProcessadorPagamentos : usa
+Main ..> Pagamento : cria
+
+@enduml
